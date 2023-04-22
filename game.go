@@ -85,16 +85,13 @@ func (game *Game) IsGameOver() bool {
 }
 
 func (game *Game) Winner() Space {
-	p1Consecs, p2Consecs := game.getAllConsecutives()
+	allConsecs := game.getAllConsecutives()
 
-	for _, p1Consec := range p1Consecs {
-		if p1Consec >= game.Opts.WinCond {
-			return PlayerOne
-		}
-	}
-	for _, p2Consec := range p2Consecs {
-		if p2Consec >= game.Opts.WinCond {
-			return PlayerTwo
+	for _, consecs := range allConsecs {
+		for _, consec := range consecs {
+			if consec.Type != Empty && consec.Count >= game.Opts.WinCond {
+				return consec.Type
+			}
 		}
 	}
 
@@ -102,10 +99,14 @@ func (game *Game) Winner() Space {
 }
 
 
-// Counts the amount of consecutive same spaces starting at (col,row) with offset (colOffset,rowOffset)
-func (game *Game) countConsecutive(col, row, colOffset, rowOffset int) int {
-	count := 1
+type consecSpaces struct {
+	Type Space
+	Count int
+}
+
+func (game *Game) getConsecutive(col, row, colOffset, rowOffset int) consecSpaces {
 	space := game.Board[col][row]
+	count := 1
 
 	for game.IsValidPos(col+colOffset, row+rowOffset) && game.Board[col+colOffset][row+rowOffset] == space {
 		count++
@@ -113,68 +114,55 @@ func (game *Game) countConsecutive(col, row, colOffset, rowOffset int) int {
 		row += rowOffset
 	}
 
-	return count
+	return consecSpaces{ Type: space, Count: count }
 }
 
-// Gets each player's consecutive spaces throughout the board starting at (col,row) with offset (colOffset,rowOffset)
-func (game *Game) getConsecutives(col, row, colOffset, rowOffset int) ([]int, []int) {
-	p1Consecs := make([]int, 0)
-	p2Consecs := make([]int, 0)
-
+func (game *Game) getConsecutives(col, row, colOffset, rowOffset int) []consecSpaces {
+	consecs := make([]consecSpaces, 0)
 	for game.IsValidPos(col, row) {
-		consec := game.countConsecutive(col, row, colOffset, rowOffset)
-		switch game.Board[col][row] {
-		case PlayerOne:
-			p1Consecs = append(p1Consecs, consec)
-		case PlayerTwo:
-			p2Consecs = append(p2Consecs, consec)
-		}
-		col += colOffset * consec
-		row += rowOffset * consec
+		consec := game.getConsecutive(col, row, colOffset, rowOffset)
+		consecs = append(consecs, consec)
+		col += colOffset * consec.Count
+		row += rowOffset * consec.Count
 	}
-
-	return p1Consecs, p2Consecs
+	return consecs
 }
 
-// Get each player's consecutive spaces throughout the entire board
-func (game *Game) getAllConsecutives() ([]int, []int) {
-	p1Consecs := make([]int, 0)
-	p2Consecs := make([]int, 0)
-
-	populate := func(col, row, colOffset, rowOffset int) {
-		p1, p2 := game.getConsecutives(col, row, colOffset, rowOffset)
-		p1Consecs = append(p1Consecs, p1...)
-		p2Consecs = append(p2Consecs, p2...)
-	}
+func (game *Game) getAllConsecutives() [][]consecSpaces {
+	colConsecs := make([]consecSpaces, 0)
+	rowConsecs := make([]consecSpaces, 0)
+	posConsecs := make([]consecSpaces, 0)
+	negConsecs := make([]consecSpaces, 0)
 
 	// Get column consecutives
 	for col := 0; col < game.Opts.Cols; col++ {
-		populate(col, 0, 0, 1)
+		colConsecs = append(colConsecs, game.getConsecutives(col, 0, 0, 1)...)
 	}
 
 	// Get row consecutives
 	for row := 0; row < game.Opts.Rows; row++ {
-		populate(0, row, 1, 0)
+		rowConsecs = append(rowConsecs, game.getConsecutives(0, row, 1, 0)...)
 	}
 
 	// Get positive-row diagonal consecutives
-	populate(0, 0, 1, 1)
+	posConsecs = append(posConsecs, game.getConsecutives(0, 0, 1, 1)...)
 	for col := 1; col < game.Opts.Cols; col++ {
-		populate(col, 0, 1, 1)
+		posConsecs = append(posConsecs, game.getConsecutives(col, 0, 1, 1)...)
 	}
 	for row := 1; row < game.Opts.Rows; row++ {
-		populate(0, row, 1, 1)
+		posConsecs = append(posConsecs, game.getConsecutives(0, row, 1, 1)...)
 	}
 
 	// Get negative-row diagonal consecutives
 	lastRow := game.Opts.Rows - 1
-	populate(0, lastRow, 1, -1)
+
+	negConsecs = append(negConsecs, game.getConsecutives(0, lastRow, 1, -1)...)
 	for col := 1; col < game.Opts.Cols; col++ {
-		populate(col, lastRow, 1, -1)
+		negConsecs = append(negConsecs, game.getConsecutives(col, lastRow, 1, -1)...)
 	}
 	for row := 1; row < game.Opts.Rows; row++ {
-		populate(0, row, 1, -1)
+		negConsecs = append(negConsecs, game.getConsecutives(0, row, 1, -1)...)
 	}
 
-	return p1Consecs, p2Consecs
+	return [][]consecSpaces{ colConsecs, rowConsecs, posConsecs, negConsecs }
 }

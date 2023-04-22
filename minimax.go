@@ -85,8 +85,8 @@ func (game *Game) calculateScore(player Space) int {
 	// TODO: Only take into account consecutive moves that have the possibility of getting 4 in a row - take consecutive empty
 	// spaces into account (change getAllConsecutives to take in a parameter which also returns consecutive empty spaces)
 	score := 0
+	allConsecs := game.getAllConsecutives()
 
-	p1Consecs, p2Consecs := game.getAllConsecutives()
 	p1Multi, p2Multi := 1, -1
 	p1Win, p2Win := math.MaxInt, math.MinInt
 	if player == PlayerTwo {
@@ -94,17 +94,39 @@ func (game *Game) calculateScore(player Space) int {
 		p1Win, p2Win = p2Win, p1Win
 	}
 
-	for _, p1Consec := range p1Consecs {
-		if p1Consec >= game.Opts.WinCond {
-			return p1Win
+	for _, consecs := range allConsecs {
+		for i, consec := range consecs {
+			// Return an "infinite" score if a player has won
+			if consec.Type != Empty && consec.Count >= game.Opts.WinCond {
+				switch consec.Type {
+				case PlayerOne:
+					return p1Win
+				case PlayerTwo:
+					return p2Win
+				}
+			}
+
+			// Count number of consecutive empty spaces around this sequence of consecutive spaces
+			// in order to calculate the maximum consecutive spaces possible
+			emptySpacesAround := 0
+			if i > 0 && consecs[i - 1].Type == Empty {
+				emptySpacesAround += consecs[i - 1].Count
+			}
+			if i + 1 < len(consecs) && consecs[i + 1].Type == Empty {
+				emptySpacesAround += consecs[i + 1].Count
+			}
+
+			// Only take this sequence of consecutive spaces into account if it has the
+			// possibility of making it to the amount of consecutive spaces required to win
+			if count := consec.Count; count + emptySpacesAround >= game.Opts.WinCond {
+				switch consec.Type {
+				case PlayerOne:
+					score += 2*count*count * p1Multi
+				case PlayerTwo:
+					score += 2*count*count * p2Multi
+				}
+			}
 		}
-		score += p1Consec*p1Consec * p1Multi
-	}
-	for _, p2Consec := range p2Consecs {
-		if p2Consec >= game.Opts.WinCond {
-			return p2Win
-		}
-		score += p2Consec*p2Consec * p2Multi
 	}
 
 	return score
