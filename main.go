@@ -39,6 +39,10 @@ func main() {
 		fmt.Println(row)
 	}
 
+	for _, consecs := range game.getAllConsecutives() {
+		fmt.Println(consecs)
+	}
+
 	for !game.IsGameOver() {
 		prediction := game.Minimax(turn).Next.Move
 		game.Place(prediction, turn)
