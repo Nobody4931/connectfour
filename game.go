@@ -60,6 +60,16 @@ func (game *Game) Place(col int, player Space) bool {
 	return true
 }
 
+func (game *Game) Unplace(col int) bool {
+	if game.heights[col] == 0 {
+		return false
+	}
+	row := game.heights[col] - 1
+	game.Board[col][row] = Empty
+	game.heights[col] = row
+	return true
+}
+
 func (game *Game) IsGameOver() bool {
 	if winner := game.Winner(); winner != Empty {
 		return true
