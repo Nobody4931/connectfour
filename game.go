@@ -9,21 +9,21 @@ const (
 )
 
 type Options struct {
-	Cols    int
-	Rows    int
+	Cols int
+	Rows int
 	WinCond int
 }
 
 type Game struct {
-	Opts    *Options
-	Board   [][]Space
+	Opts *Options
+	Board [][]Space
 	heights []int
 }
 
 func NewOptions() Options {
 	return Options{
-		Cols:    7,
-		Rows:    6,
+		Cols: 7,
+		Rows: 6,
 		WinCond: 4,
 	}
 }
@@ -36,8 +36,8 @@ func NewGame(opts *Options) Game {
 	}
 
 	return Game{
-		Opts:    opts,
-		Board:   board,
+		Opts: opts,
+		Board: board,
 		heights: make([]int, opts.Cols),
 	}
 }
