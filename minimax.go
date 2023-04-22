@@ -16,6 +16,9 @@ func (game *Game) Minimax(player Space) MoveNode {
 			availableCols++
 		}
 	}
+	if availableCols <= 1 { // just in case of log1 (infinite loop)
+		availableCols = 2
+	}
 	maxDepth := intLog(availableCols, 50000000)
 
 	rootMove := MoveNode{ Move: -1 }
