@@ -85,8 +85,6 @@ func (game *Game) minimax(player Space, node *MoveNode, depth int, bestMax int, 
 }
 
 func (game *Game) calculateScore(player Space) int {
-	// TODO: Only take into account consecutive moves that have the possibility of getting 4 in a row - take consecutive empty
-	// spaces into account (change getAllConsecutives to take in a parameter which also returns consecutive empty spaces)
 	score := 0
 	allConsecs := game.getAllConsecutives()
 
